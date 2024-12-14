@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #e6e9f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            font-size: 16px;
+        }
+
+        .chat-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0px 4px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: scroll;
+            border-bottom: 1px solid #ddd;
+            background: #f7f7f7;
+            color: #333;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px 20px 0 20px;
+            max-width: 75%;
+            font-size: 15px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: #f1f1f1;
+            color: #333;
+            padding: 12px 20px;
+            border-radius: 20px 20px 20px 0;
+            max-width: 75%;
+            white-space: pre-wrap;
+            font-size: 15px;
+        }
+
+        .code-block {
+            background: #2e2e2e;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 12px 20px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-container input {
+            flex-grow: 1;
+            padding: 12px 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            margin-right: 10px;
+        }
+
+        .input-container button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .input-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .loader {
+            display: inline-block;
+            color: #007bff;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Animation for fade-in effect */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox"></div>
+        <div class="input-container">
+            <input type="text" id="promptInput" placeholder="Type your message..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const promptInput = document.getElementById('promptInput');
+
+        async function sendMessage() {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) return;
+
+            addMessage(userPrompt, 'user-message');
+            promptInput.value = '';
+
+            addLoader();
+
+            try {
+                const response = await puter.ai.chat(userPrompt, { model: 'claude-3-5-sonnet', stream: true });
+                await processStream(response);
+            } catch (error) {
+                addMessage('Error: ' + error.message, 'ai-message');
+            } finally {
+                removeLoader();
+            }
+        }
+
+        function addMessage(text, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${className}`;
+            messageDiv.textContent = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addLoader() {
+            const loaderDiv = document.createElement('div');
+            loaderDiv.id = 'loader';
+            loaderDiv.className = 'loader';
+            loaderDiv.innerHTML = 'Generating response...';
+            chatBox.appendChild(loaderDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeLoader() {
+            const loaderDiv = document.getElementById('loader');
+            if (loaderDiv) {
+                chatBox.removeChild(loaderDiv);
+            }
+        }
+
+        async function processStream(response) {
+            let aiMessage = document.createElement('div');
+            aiMessage.className = 'chat-message ai-message';
+            chatBox.appendChild(aiMessage);
+            let buffer = '';
+
+            for await (const part of response) {
+                const text = part?.text || '';
+                buffer += text;
+
+                // Check for code blocks
+                if (buffer.includes('```')) {
+                    const parts = buffer.split(/```/);
+                    aiMessage.textContent = parts[0];
+                    if (parts[1]) {
+                        const codeBlock = document.createElement('pre');
+                        codeBlock.className = 'code-block';
+                        codeBlock.innerHTML = `<code>${parts[1]}</code>`;
+                        aiMessage.appendChild(codeBlock);
+                        hljs.highlightElement(codeBlock);
+                        buffer = parts[2] || '';
+                    }
+                } else {
+                    aiMessage.textContent = buffer;
+                }
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
