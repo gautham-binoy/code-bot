@@ -3,229 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Interface</title>
-    <script src="https://js.puter.com/v2/"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    <title>AI Chatbot</title>
     <style>
-        * {
-            box-sizing: border-box;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c2f38;
+            color: #fff;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #1e1e2f;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            padding: 20px;
-            font-size: 16px;
-            color: #e4e4e4;
-        }
-
-        .chat-container {
-            background: #2c2f44;
-            width: 100%;
-            max-width: 800px;
-            height: 90vh;
-            display: flex;
-            flex-direction: column;
-            border-radius: 12px;
-            box-shadow: 0px 8px 40px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            border: 1px solid #3a3f57;
         }
-
-        .chat-box {
-            flex-grow: 1;
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: #333;
+            border-radius: 10px;
             padding: 20px;
-            overflow-y: scroll;
-            border-bottom: 1px solid #3a3f57;
-            background: #222634;
-            color: #d1d9e6;
-        }
-
-        .chat-message {
-            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
-            animation: fadeIn 0.5s ease;
+            height: 80%;
+            overflow-y: auto;
         }
-
+        .message {
+            background-color: #444;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
         .user-message {
             align-self: flex-end;
             background-color: #0078d4;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 20px 20px 0 20px;
-            max-width: 75%;
-            font-size: 15px;
         }
-
-        .ai-message {
+        .bot-message {
             align-self: flex-start;
-            background-color: #3a3f57;
-            color: #d1d9e6;
-            padding: 12px 20px;
-            border-radius: 20px 20px 20px 0;
-            max-width: 75%;
-            white-space: pre-wrap;
-            font-size: 15px;
+            background-color: #444;
         }
-
-        .code-block {
-            background: #2e2e2e;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            overflow-x: auto;
-            margin-top: 10px;
-            white-space: pre-wrap;
-        }
-
         .input-container {
             display: flex;
-            padding: 12px 20px;
-            background-color: #222634;
-            border-top: 1px solid #3a3f57;
+            margin-top: 20px;
         }
-
         .input-container input {
-            flex-grow: 1;
-            padding: 12px 20px;
-            border: 1px solid #3a3f57;
-            border-radius: 8px;
-            font-size: 16px;
-            outline: none;
-            margin-right: 10px;
-            background: #3a3f57;
-            color: #d1d9e6;
-        }
-
-        .input-container button {
-            background-color: #0078d4;
-            color: #fff;
-            padding: 12px 20px;
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
             border: none;
-            border-radius: 8px;
             font-size: 16px;
+            margin-right: 10px;
+            background-color: #444;
+            color: #fff;
+        }
+        .input-container button {
+            padding: 10px 20px;
+            background-color: #0078d4;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
             cursor: pointer;
-            transition: background-color 0.3s;
         }
-
         .input-container button:hover {
-            background-color: #005fa1;
+            background-color: #005bb5;
         }
-
-        .loader {
-            display: inline-block;
-            color: #0078d4;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        /* Animation for fade-in effect */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+        .loading {
+            color: #aaa;
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-box" id="chatBox"></div>
-        <div class="input-container">
-            <input type="text" id="promptInput" placeholder="Type your message..." />
-            <button onclick="sendMessage()">Send</button>
-        </div>
+    <div class="chat-container" id="chat-container">
+        <!-- Chat messages will appear here -->
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    
+    <script src="https://js.puter.com/v2/"></script>
     <script>
-        const chatBox = document.getElementById('chatBox');
-        const promptInput = document.getElementById('promptInput');
-
-        async function sendMessage() {
-            const userPrompt = promptInput.value.trim();
-            if (!userPrompt) return;
-
-            addMessage(userPrompt, 'user-message');
-            promptInput.value = '';
-
-            addLoader();
-
-            try {
-                const response = await puter.ai.chat(userPrompt, { model: 'claude-3-5-sonnet', stream: true });
-                console.log("API response:", response); // Log the entire response object
-                await processStream(response);
-            } catch (error) {
-                console.error("Error details:", error); // Log the entire error object
-                addMessage('Error: ' + (error.message || error), 'ai-message');
-            } finally {
-                removeLoader();
-            }
-        }
-
-        function addMessage(text, className) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${className}`;
-            messageDiv.textContent = text;
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function addLoader() {
-            const loaderDiv = document.createElement('div');
-            loaderDiv.id = 'loader';
-            loaderDiv.className = 'loader';
-            loaderDiv.innerHTML = 'Generating response...';
-            chatBox.appendChild(loaderDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function removeLoader() {
-            const loaderDiv = document.getElementById('loader');
-            if (loaderDiv) {
-                chatBox.removeChild(loaderDiv);
-            }
-        }
-
-        async function processStream(response) {
-            let aiMessage = document.createElement('div');
-            aiMessage.className = 'chat-message ai-message';
-            chatBox.appendChild(aiMessage);
-            let buffer = '';
-
+        async function streamClaudeResponse(query) {
+            const response = await puter.ai.chat(query, { model: 'claude-3-5-sonnet', stream: true });
+            
+            const chatContainer = document.getElementById("chat-container");
+            chatContainer.innerHTML += `<div class="message bot-message loading">...</div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
             for await (const part of response) {
-                const text = part?.text || '';
-                buffer += text;
-
-                // Check for code blocks
-                if (buffer.includes('```')) {
-                    const parts = buffer.split(/```/);
-                    aiMessage.textContent = parts[0];
-                    if (parts[1]) {
-                        const codeBlock = document.createElement('pre');
-                        codeBlock.className = 'code-block';
-                        codeBlock.innerHTML = `<code>${parts[1]}</code>`;
-                        aiMessage.appendChild(codeBlock);
-                        hljs.highlightElement(codeBlock);
-                        buffer = parts[2] || '';
-                    }
-                } else {
-                    aiMessage.textContent = buffer;
-                }
-
-                chatBox.scrollTop = chatBox.scrollHeight;
+                const botMessage = document.querySelector('.bot-message.loading');
+                botMessage.textContent = part?.text;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             }
+        }
+
+        function sendMessage() {
+            const inputElement = document.getElementById('user-input');
+            const userMessage = inputElement.value.trim();
+            
+            if (!userMessage) return;
+            
+            const chatContainer = document.getElementById("chat-container");
+            
+            // Display the user's message
+            chatContainer.innerHTML += `<div class="message user-message">${userMessage}</div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Clear the input field
+            inputElement.value = '';
+            
+            // Start the response from Claude AI
+            streamClaudeResponse(userMessage);
         }
     </script>
 </body>
