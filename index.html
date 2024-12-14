@@ -87,16 +87,24 @@
     <script src="https://js.puter.com/v2/"></script>
     <script>
         async function streamClaudeResponse(query) {
-            const response = await puter.ai.chat(query, { model: 'claude-3-5-sonnet', stream: true });
-            
-            const chatContainer = document.getElementById("chat-container");
-            chatContainer.innerHTML += `<div class="message bot-message loading">...</div>`;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            for await (const part of response) {
-                const botMessage = document.querySelector('.bot-message.loading');
-                botMessage.textContent = part?.text;
+            try {
+                const response = await puter.ai.chat(query, { model: 'claude-3-5-sonnet', stream: true });
+                console.log(response); // Log the full response for debugging
+                
+                const chatContainer = document.getElementById("chat-container");
+                chatContainer.innerHTML += `<div class="message bot-message loading">...</div>`;
                 chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Check if the response has a 'text' property
+                if (response && response.text) {
+                    const botMessage = document.querySelector('.bot-message.loading');
+                    botMessage.textContent = response.text; // Display the AI response
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    console.error("Response does not contain expected 'text' property:", response);
+                }
+            } catch (error) {
+                console.error("Error fetching AI response:", error);
             }
         }
 
