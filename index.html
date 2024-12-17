@@ -3,191 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Chatbot</title>
+    <title>AI Chatbot with Dark Themed Code Editor</title>
+
+    <!-- CodeMirror CSS for dark theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+
     <style>
-        /* General Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: #f5f7fb;
-            color: #333;
-        }
-
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f5f5f5;
+            margin: 0;
             padding: 20px;
-            background-color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            border-bottom: 1px solid #ddd;
+            text-align: center;
         }
 
-        #chat-container::-webkit-scrollbar {
-            width: 8px;
+        h1 {
+            color: #00e676;
         }
 
-        #chat-container::-webkit-scrollbar-thumb {
-            background-color: #bbb;
-            border-radius: 4px;
-        }
-
-        #chat-container::-webkit-scrollbar-track {
-            background-color: #f5f5f5;
-        }
-
-        .chat-bubble {
-            max-width: 75%;
-            padding: 12px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .chat-bubble.user {
-            align-self: flex-end;
-            background-color: #0078ff;
-            color: white;
-            border-bottom-right-radius: 0;
-        }
-
-        .chat-bubble.bot {
-            align-self: flex-start;
-            background-color: #e9ecef;
-            border-bottom-left-radius: 0;
-        }
-
-        #input-container {
-            display: flex;
-            flex-direction: row;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-top: 1px solid #ddd;
-        }
-
-        textarea {
-            flex: 1;
-            height: 50px;
-            padding: 10px;
-            font-size: 14px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            resize: none;
-            outline: none;
-        }
-
-        textarea:focus {
-            border-color: #0078ff;
+        #output {
+            margin: 20px auto;
+            width: 80%;
+            height: 400px;
+            border: 1px solid #444;
         }
 
         button {
-            margin-left: 10px;
-            padding: 10px 20px;
-            font-size: 14px;
-            background-color: #0078ff;
-            color: white;
+            background-color: #00e676;
+            color: #121212;
             border: none;
-            border-radius: 8px;
+            padding: 10px 20px;
             cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
         }
 
         button:hover {
-            background-color: #0056b3;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-            textarea {
-                font-size: 12px;
-            }
-
-            button {
-                font-size: 12px;
-                padding: 8px 15px;
-            }
+            background-color: #00c853;
         }
     </style>
 </head>
 <body>
-    <div id="chat-container"></div>
-    <div id="input-container">
-        <textarea id="user-input" placeholder="Type your message here..." oninput="toggleButtonState()"></textarea>
-        <button id="send-button" onclick="sendMessage()" disabled>Send</button>
-    </div>
+    <h1>AI Chatbot with Dark Theme Code Editor</h1>
+    <button onclick="streamClaudeResponse()">Generate Response</button>
+    <div id="output"></div>
+
+    <!-- CodeMirror JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+
+    <!-- Puter.js Library -->
     <script src="https://js.puter.com/v2/"></script>
+
     <script>
-        const chatContainer = document.getElementById("chat-container");
-        const userInput = document.getElementById("user-input");
-        const sendButton = document.getElementById("send-button");
-        const conversation = [];
+        // Initialize CodeMirror
+        const editor = CodeMirror(document.getElementById("output"), {
+            mode: "javascript",
+            theme: "dracula",
+            lineNumbers: true,
+            readOnly: true,
+            autoCloseBrackets: true
+        });
 
-        function toggleButtonState() {
-            sendButton.disabled = !userInput.value.trim();
-        }
+        async function streamClaudeResponse() {
+            editor.setValue(""); // Clear previous output
 
-        async function sendMessage() {
-            const userMessage = userInput.value.trim();
-            if (!userMessage) return;
-
-            // Display the user's message
-            addMessage(userMessage, "user");
-            userInput.value = ""; // Clear input
-            toggleButtonState();
-
-            // Save user message to conversation
-            conversation.push({ role: "user", content: userMessage });
-
-            // Fetch bot response
             try {
-                const response = await puter.ai.chat(conversation, { model: 'claude-3-5-sonnet', stream: true });
-                let botMessage = "";
+                const response = await puter.ai.chat(
+                    "Write a detailed essay on the impact of artificial intelligence on society", 
+                    { model: 'claude-3-5-sonnet', stream: true }
+                );
 
                 for await (const part of response) {
-                    botMessage += part?.text || "";
-                    updateBotMessage(botMessage);
-                }
-
-                // Save bot response to conversation
-                conversation.push({ role: "bot", content: botMessage });
-
-                // Manage memory: Trim conversation if too long
-                if (conversation.length > 20) {
-                    conversation.splice(0, conversation.length - 20);
+                    editor.replaceRange(part?.text || "", CodeMirror.Pos(editor.lineCount()));
                 }
             } catch (error) {
-                console.error("Error:", error);
-                addMessage("An error occurred while fetching the response. Please try again.", "bot");
-            }
-        }
-
-        function addMessage(message, sender) {
-            const messageDiv = document.createElement("div");
-            messageDiv.className = `chat-bubble ${sender}`;
-            messageDiv.textContent = message;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message
-        }
-
-        function updateBotMessage(message) {
-            const lastMessage = chatContainer.lastChild;
-            if (lastMessage && lastMessage.classList.contains("bot")) {
-                lastMessage.textContent = message;
-            } else {
-                addMessage(message, "bot");
+                editor.setValue("Error: " + error.message);
             }
         }
     </script>
