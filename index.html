@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot with Dark Themed Code Editor</title>
+    <title>AI Chatbot</title>
 
     <!-- CodeMirror CSS for dark theme -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
@@ -15,19 +15,66 @@
             background-color: #121212;
             color: #f5f5f5;
             margin: 0;
-            padding: 20px;
-            text-align: center;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
 
         h1 {
+            text-align: center;
             color: #00e676;
+            margin-top: 10px;
         }
 
-        #output {
-            margin: 20px auto;
-            width: 80%;
-            height: 400px;
-            border: 1px solid #444;
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            height: 80%;
+            overflow-y: auto;
+            margin-bottom: 70px;
+        }
+
+        .message {
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #00e676;
+            color: #121212;
+            align-self: flex-end;
+        }
+
+        .ai-message {
+            background-color: #444;
+            color: #f5f5f5;
+            align-self: flex-start;
+        }
+
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            padding: 10px;
+            background-color: #1e1e1e;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #222;
+            color: #f5f5f5;
+            margin-right: 10px;
         }
 
         button {
@@ -35,9 +82,9 @@
             color: #121212;
             border: none;
             padding: 10px 20px;
-            cursor: pointer;
             font-size: 16px;
             border-radius: 5px;
+            cursor: pointer;
         }
 
         button:hover {
@@ -46,42 +93,61 @@
     </style>
 </head>
 <body>
-    <h1>AI Chatbot with Dark Theme Code Editor</h1>
-    <button onclick="streamClaudeResponse()">Generate Response</button>
-    <div id="output"></div>
+    <h1>AI Chatbot</h1>
+    <div class="chat-container" id="chat-container"></div>
 
-    <!-- CodeMirror JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type your message here..." onkeydown="handleKeyPress(event)">
+        <button onclick="handleUserMessage()">Send</button>
+    </div>
 
     <!-- Puter.js Library -->
     <script src="https://js.puter.com/v2/"></script>
 
     <script>
-        // Initialize CodeMirror
-        const editor = CodeMirror(document.getElementById("output"), {
-            mode: "javascript",
-            theme: "dracula",
-            lineNumbers: true,
-            readOnly: true,
-            autoCloseBrackets: true
-        });
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
 
-        async function streamClaudeResponse() {
-            editor.setValue(""); // Clear previous output
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 
+        async function handleUserMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            // Generate AI response
+            await streamClaudeResponse(message);
+        }
+
+        async function streamClaudeResponse(prompt) {
             try {
-                const response = await puter.ai.chat(
-                    "Write a detailed essay on the impact of artificial intelligence on society", 
-                    { model: 'claude-3-5-sonnet', stream: true }
-                );
+                addMessage("Generating response...", 'ai');
 
+                const response = await puter.ai.chat(prompt, { model: 'claude-3-5-sonnet', stream: true });
+
+                let aiMessage = '';
                 for await (const part of response) {
-                    editor.replaceRange(part?.text || "", CodeMirror.Pos(editor.lineCount()));
+                    aiMessage += part?.text || '';
+                    // Update last AI message incrementally
+                    chatContainer.lastChild.textContent = aiMessage;
                 }
             } catch (error) {
-                editor.setValue("Error: " + error.message);
+                addMessage(`Error: ${error.message}`, 'ai');
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                handleUserMessage();
             }
         }
     </script>
